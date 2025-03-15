@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+*.pyo
+*.log
+*.csv
+*.json
+*.mp4
+*.avi
+.vscode/
+.idea/
+*.h5
+*.tflite
+models/
+output/
+logs/
+venv/
+.env
