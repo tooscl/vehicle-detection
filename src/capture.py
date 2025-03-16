@@ -1,7 +1,7 @@
 import cv2
 
 
-# stream_url = "https://media.kgd.ru:11936/traffic/trafcam11prol.m3u8" TODO: ffmpeg
+# stream_url = "https://media.kgd.ru:11936/traffic/trafcam11prol.m3u8" # TODO: ffmpeg
 # cookies = "domain_sid=nOUG5rsef6R8gyoH2Iyf9%3A1742053449005" # exp 22.03.2025
 # cv2.VideoCapture(f"{PATH}|Cookie=domain_sid=nOUG5rsef6R8gyoH2Iyf9%3A1742053449005")
 def get_cap():

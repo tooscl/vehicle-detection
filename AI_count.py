@@ -4,7 +4,7 @@ import time
 import pandas as pd
 from ultralytics import YOLO
 
-from src.video_capture import get_cap
+from src.capture import get_cap
 
 
 # # === Параметры ===
