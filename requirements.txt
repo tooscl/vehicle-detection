@@ -6,3 +6,5 @@ ultralytics
 tensorflow
 scipy
 pyyaml
+lap>=0.5.12
+ffmpeg
