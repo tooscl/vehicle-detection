@@ -6,9 +6,9 @@ import cv2
 # cv2.VideoCapture(f"{PATH}|Cookie=domain_sid=nOUG5rsef6R8gyoH2Iyf9%3A1742053449005")
 def get_cap():
 
-    paths = {"1": "/tests/7 утра - Trim.mp4",
-             "2": "/tests/12 дня - Trim.mp4",
-             "3": "/tests/20 вечера - Trim.mp4"}
+    paths = {"1": "../tests/7 утра - Trim.mp4",
+             "2": "../tests/12 дня - Trim.mp4",
+             "3": "../tests/20 вечера - Trim.mp4"}
 
     while True:
         try:

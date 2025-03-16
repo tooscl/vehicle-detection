@@ -30,7 +30,7 @@ from src.video_capture import get_cap
 # crossings = []
 
 # === Запуск камеры ===
-cap = get_cap()
+cap = cv2.VideoCapture("tests/7 утра - Trim.mp4")
 start_time = time.time()
 
 while cap.isOpened():
