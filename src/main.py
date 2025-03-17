@@ -3,7 +3,7 @@ import cv2
 import time
 
 from capture import get_cap
-from markup import bounds, lines
+from markup import boxes, lines
 from models.yolov8n import yolo8vn
 from cls import CLASS_MAP
 
@@ -19,11 +19,14 @@ def main():
             break
 
         # Разметка фрейма
-        cv2.polylines(frame, [bounds[0]], isClosed=True, color=bounds[1], thickness=2) # Устанавливаем границу
+        for box in boxes.values():
+            pts, color = box
+            thikness = 2
+            cv2.polylines(frame, [pts], isClosed=True, color=color, thickness=thikness)
         for line in lines.values():
             start_point, end_point, color = line
             thickness = 2
-            cv2.line(frame, start_point, end_point, color, thickness)
+            cv2.line(frame, start_point, end_point, color=color, thickness=thickness)
 
         # Определение объектов
         results = model(frame)[0] # Детекции
@@ -31,10 +34,14 @@ def main():
         # Обход детекций
         for box in results.boxes.data:
             x1, y1, x2, y2, conf, cls = box
-            #     cls = int(cls)
+            cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2) # Центр объекта
+            cls = int(cls) # Для корректной работы с картой классов
+            if cls not in CLASS_MAP: # Не работаем с нецелевыми объектами
+                continue
 
-            # Визуализация боксов
-            cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
+
+            # # Визуализация боксов
+            # cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
 
         # Вывод изображения
         cv2.imshow("Traffic Monitoring", frame)

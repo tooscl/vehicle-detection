@@ -47,11 +47,11 @@ while cap.isOpened():
     #
     # # === Обход детекций ===a
     # for box in results.boxes.data:
-    #     x1, y1, x2, y2, conf, cls = box
-    #     cls = int(cls)
+    #     x1, y1, x2, y2, conf, cls.py = box
+    #     cls.py = int(cls.py)
     #
     #     # Игнорируем неклассифицируемые объекты
-    #     if cls not in CLASS_MAP:
+    #     if cls.py not in CLASS_MAP:
     #         continue
     #
     #     # Определяем центр объекта
@@ -69,10 +69,10 @@ while cap.isOpened():
     #
     #     # === Отслеживание пересечения линии ===
     #     if LINE_Y - 10 < cy < LINE_Y + 10:
-    #         crossings.append({"направление": direction, "время": time.strftime("%H:%M:%S"), "тип ТС": CLASS_MAP[cls]})
+    #         crossings.append({"направление": direction, "время": time.strftime("%H:%M:%S"), "тип ТС": CLASS_MAP[cls.py]})
     #
     #     # === Визуализация ===
-    #     label = f"{CLASS_MAP[cls]} ({conf:.2f})"
+    #     label = f"{CLASS_MAP[cls.py]} ({conf:.2f})"
     #     cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
     #     cv2.putText(frame, label, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     #
