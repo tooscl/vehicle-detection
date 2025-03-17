@@ -3,9 +3,9 @@ import cv2
 import time
 
 from capture import get_cap
-from markup import polygons, lines
+from markup import polygons, lines, lanes
 from models.yolov8n import yolo8vn
-from traffic_check import is_inside_polygon
+from utils import is_inside_polygon
 from cls import CLASS_MAP
 
 def main():
@@ -22,14 +22,14 @@ def main():
             break
 
         # Разметка фрейма
-        for polygon in polygons.values():
+        for polygon in lanes.values():
             pts, color = polygon
             thikness = 2
             cv2.polylines(frame, [pts], isClosed=True, color=color, thickness=thikness)
-        for line in lines.values():
-            start_point, end_point, color = line
-            thickness = 2
-            cv2.line(frame, start_point, end_point, color=color, thickness=thickness)
+        # for line in lines.values():
+        #     start_point, end_point, color = line
+        #     thickness = 2
+        #     cv2.line(frame, start_point, end_point, color=color, thickness=thickness)
 
         # Определение объектов
         results = model(frame)[0] # Детекции
