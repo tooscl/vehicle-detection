@@ -9,23 +9,23 @@ from utils import is_inside_polygon
 from cls import CLASS_MAP
 
 def main():
+    # Инициализация переменных и массивов
     cap = get_cap() # Инициализация захвата видео
-
     model = yolo8vn # Инициализация модели
-
     top_to_bottom_traffic = None  # Флаг на направление трафика
-
     frame_count = 0
+
+    # Открытие видео
     while cap.isOpened():
         ret, frame = cap.read()
         if not ret:
             break
 
-        # Разметка фрейма
-        for polygon in lanes.values():
-            pts, color = polygon
-            thikness = 2
-            cv2.polylines(frame, [pts], isClosed=True, color=color, thickness=thikness)
+        # # Разметка фрейма
+        # for polygon in lanes.values():
+        #     pts, color = polygon
+        #     thikness = 2
+        #     cv2.polylines(frame, [pts], isClosed=True, color=color, thickness=thikness)
         # for line in lines.values():
         #     start_point, end_point, color = line
         #     thickness = 2
@@ -42,13 +42,13 @@ def main():
             if cls not in CLASS_MAP: # Не работаем с нецелевыми объектами
                 continue
 
-            # Определяем какой трафик
+            # Определяем в каком направлении движется трафик
             if is_inside_polygon(center, polygons["to-right-check"]) or is_inside_polygon(center, polygons["to-left-check"]):
                 top_to_bottom_traffic = False
             if is_inside_polygon(center, polygons["to-bottom-check"]) or is_inside_polygon(center, polygons["to-top-check"]):
                 top_to_bottom_traffic = True
 
-
+            # Определяем в какой полосе движения находится объект
 
             # # Визуализация боксов2
             # cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
