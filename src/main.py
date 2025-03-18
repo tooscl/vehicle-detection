@@ -1,8 +1,5 @@
 from datetime import datetime, timedelta
-from time import process_time_ns
-
 import cv2
-import time
 from copy import deepcopy
 from prettytable import PrettyTable
 
@@ -10,16 +7,19 @@ from capture import get_cap
 from markup import polygons, lines, lanes
 from models.yolov8n import yolo8vn
 from utils import is_inside_polygon
-from cls import CLASS_MAP
+from cls import class_map
 from counts import counts_template
 
 def main():
+    # Гиперпараметры
+    DELTA_SECONDS = 5 # Частота вывода информации в секундах
+    FRAME_SKIP = 2 # Каждый n кадр, который мы пропускаем
+    
     # Инициализация переменных и массивов
     cap = get_cap() # Инициализация захвата видео
     model = yolo8vn # Инициализация модели
     top_to_bottom_traffic = None  # Флаг на направление трафика
     frame_count = 0
-    delta_seconds = 5 # Частота вывода информации в секундах
     last_time_updated = datetime.now()
     update = False # Флаг на вывод информации
 
@@ -28,6 +28,11 @@ def main():
         ret, frame = cap.read()
         if not ret:
             break
+
+        # Работа со счетчиком фреймов
+        frame_count += 1
+        if frame_count % FRAME_SKIP == 0:
+            continue # Пропуск кадров для ускорения работы
 
         # # Разметка фрейма
         # for polygon in lanes.values():
@@ -48,7 +53,7 @@ def main():
             x1, y1, x2, y2, conf, cls = box
             center = (int((x1 + x2) / 2), int((y1 + y2) / 2)) # Центр объекта
             cls = int(cls) # Для корректной работы с картой классов
-            if cls not in CLASS_MAP: # Не работаем с нецелевыми объектами
+            if cls not in class_map: # Не работаем с нецелевыми объектами
                 continue
 
             # Определяем изменение направления движения трафика
@@ -58,7 +63,7 @@ def main():
                 top_to_bottom_traffic = False
 
             # Проверяем нреобходимость выыода информации
-            if datetime.now() - last_time_updated >= timedelta(seconds=delta_seconds):
+            if datetime.now() - last_time_updated >= timedelta(seconds=DELTA_SECONDS):
                 update = True
                 last_time_updated = datetime.now()
 
@@ -67,25 +72,25 @@ def main():
                 if top_to_bottom_traffic is True: # Такое большое кол-во проверок для того, чтобы уменьшить кол-во вызовов is_inside_polygon()
                     if is_inside_polygon(center, lanes["to-top"]):
                         if is_inside_polygon(center, lanes["to-top-right-lane"]):
-                            counts["top-bottom"]["to-top"]["to-top-right-lane"][CLASS_MAP[cls]] += 1
+                            counts["top-bottom"]["to-top"]["to-top-right-lane"][class_map[cls]] += 1
                         elif is_inside_polygon(center, lanes["to-top-left-lane"]):
-                            counts["top-bottom"]["to-top"]["to-top-left-lane"][CLASS_MAP[cls]] += 1
+                            counts["top-bottom"]["to-top"]["to-top-left-lane"][class_map[cls]] += 1
                     elif is_inside_polygon(center, lanes["to-bottom"]):
                         if is_inside_polygon(center, lanes["to-bottom-right-lane"]):
-                            counts["top-bottom"]["to-bottom"]["to-bottom-right-lane"][CLASS_MAP[cls]] += 1
+                            counts["top-bottom"]["to-bottom"]["to-bottom-right-lane"][class_map[cls]] += 1
                         elif is_inside_polygon(center, lanes["to-bottom-left-lane"]):
-                            counts["top-bottom"]["to-bottom"]["to-bottom-left-lane"][CLASS_MAP[cls]] += 1
+                            counts["top-bottom"]["to-bottom"]["to-bottom-left-lane"][class_map[cls]] += 1
                 elif top_to_bottom_traffic is False:
                     if is_inside_polygon(center, lanes["to-left"]):
                         if is_inside_polygon(center, lanes["to-left-right-lane"]):
-                            counts["left-right"]["to-left"]["to-left-right-lane"][CLASS_MAP[cls]] += 1
+                            counts["left-right"]["to-left"]["to-left-right-lane"][class_map[cls]] += 1
                         elif is_inside_polygon(center, lanes["to-left-left-lane"]):
-                            counts["left-right"]["to-left"]["to-left-left-lane"][CLASS_MAP[cls]] += 1
+                            counts["left-right"]["to-left"]["to-left-left-lane"][class_map[cls]] += 1
                     elif is_inside_polygon(center, lanes["to-right"]):
                         if is_inside_polygon(center, lanes["to-right-right-lane"]):
-                            counts["left-right"]["to-right"]["to-right-right-lane"][CLASS_MAP[cls]] += 1
+                            counts["left-right"]["to-right"]["to-right-right-lane"][class_map[cls]] += 1
                         elif is_inside_polygon(center, lanes["to-right-left-lane"]):
-                            counts["left-right"]["to-right"]["to-right-left-lane"][CLASS_MAP[cls]] += 1
+                            counts["left-right"]["to-right"]["to-right-left-lane"][class_map[cls]] += 1
                 else:
                     pass
 
@@ -127,7 +132,6 @@ def main():
         cv2.imshow("Traffic Monitoring", frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
-        frame_count += 1
 
     # Завершение работы
     cap.release()
