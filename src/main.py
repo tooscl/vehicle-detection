@@ -1,5 +1,7 @@
 import cv2
 import time
+from copy import deepcopy
+from prettytable import PrettyTable
 
 from capture import get_cap
 from markup import polygons, lines, lanes
@@ -35,6 +37,7 @@ def main():
         results = model(frame)[0] # Детекции
 
         # Обход детекций
+        counts = deepcopy(counts_template) # Подсчеты объектов на фрейме
         for box in results.boxes.data:
             x1, y1, x2, y2, conf, cls = box
             center = (int((x1 + x2) / 2), int((y1 + y2) / 2)) # Центр объекта
@@ -49,7 +52,6 @@ def main():
                 top_to_bottom_traffic = False
 
             # Считаем количество объекта по линиям
-            counts = counts_template
             if top_to_bottom_traffic is True: # Такое большое кол-во проверок для того, чтобы уменьшить кол-во вызовов is_inside_polygon()
                 if is_inside_polygon(center, lanes["to-top"]):
                     if is_inside_polygon(center, lanes["to-top-right-lane"]):
@@ -72,7 +74,37 @@ def main():
                         counts["left-right"]["to-right"]["to-right-right-lane"][CLASS_MAP[cls]] += 1
                     elif is_inside_polygon(center, lanes["to-right-left-lane"]):
                         counts["left-right"]["to-right"]["to-right-left-lane"][CLASS_MAP[cls]] += 1
-                        
+
+        # Вывод информации
+        if top_to_bottom_traffic is True:
+            from prettytable import PrettyTable
+
+            data = {
+                "top-bottom": {
+                    "to-top": {
+                        "to-top-right-lane": {"bike": 0, "car/van": 0, "bus": 0, "cargo": 0},
+                        "to-top-left-lane": {"bike": 0, "car/van": 0, "bus": 0, "cargo": 0},
+                    },
+                    "to-bottom": {
+                        "to-bottom-right-lane": {"bike": 0, "car/van": 0, "bus": 0, "cargo": 0},
+                        "to-bottom-left-lane": {"bike": 0, "car/van": 0, "bus": 0, "cargo": 0},
+                    },
+                }
+            }
+
+            table = PrettyTable()
+            table.field_names = ["Direction", "Lane", "Bike", "Car/Van", "Bus", "Cargo"]
+
+            for direction, lanes in data.items():
+                for move, lane_dict in lanes.items():
+                    for lane, counts in lane_dict.items():
+                        table.add_row([f"{direction} -> {move}", lane, counts["bike"], counts["car/van"], counts["bus"],
+                                       counts["cargo"]])
+
+            print(table)
+
+        elif top_to_bottom_traffic is False:
+            pass
 
             # # Визуализация боксов
             # cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)

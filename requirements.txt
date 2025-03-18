@@ -8,3 +8,4 @@ scipy
 pyyaml
 lap>=0.5.12
 ffmpeg
+prettytable

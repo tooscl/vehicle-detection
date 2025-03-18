@@ -1,7 +1,6 @@
 CLASS_MAP = {
-    2: "bike",
-    3: "car",
-    5: "van",
-    7: "bus",
-    8: "cargo"
+    3: "bike",
+    2: "car/van",
+    5: "bus",
+    7: "cargo"
 }
