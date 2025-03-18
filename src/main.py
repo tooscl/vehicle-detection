@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+from time import process_time_ns
+
 import cv2
 import time
 from copy import deepcopy
@@ -16,6 +19,9 @@ def main():
     model = yolo8vn # Инициализация модели
     top_to_bottom_traffic = None  # Флаг на направление трафика
     frame_count = 0
+    delta_seconds = 5 # Частота вывода информации в секундах
+    last_time_updated = datetime.now()
+    update = False # Флаг на вывод информации
 
     # Открытие видео
     while cap.isOpened():
@@ -34,7 +40,7 @@ def main():
         #     cv2.line(frame, start_point, end_point, color=color, thickness=thickness)
 
         # Определение объектов
-        results = model(frame)[0] # Детекции
+        results = model(frame, verbose=False)[0] # Детекции (без логов)
 
         # Обход детекций
         counts = deepcopy(counts_template) # Подсчеты объектов на фрейме
@@ -51,60 +57,67 @@ def main():
             elif is_inside_polygon(center, polygons["to-right-check"]) or is_inside_polygon(center, polygons["to-left-check"]):
                 top_to_bottom_traffic = False
 
-            # Считаем количество объекта по линиям
-            if top_to_bottom_traffic is True: # Такое большое кол-во проверок для того, чтобы уменьшить кол-во вызовов is_inside_polygon()
-                if is_inside_polygon(center, lanes["to-top"]):
-                    if is_inside_polygon(center, lanes["to-top-right-lane"]):
-                        counts["top-bottom"]["to-top"]["to-top-right-lane"][CLASS_MAP[cls]] += 1
-                    elif is_inside_polygon(center, lanes["to-top-left-lane"]):
-                        counts["top-bottom"]["to-top"]["to-top-left-lane"][CLASS_MAP[cls]] += 1
-                elif is_inside_polygon(center, lanes["to-bottom"]):
-                    if is_inside_polygon(center, lanes["to-bottom-right-lane"]):
-                        counts["top-bottom"]["to-bottom"]["to-bottom-right-lane"][CLASS_MAP[cls]] += 1
-                    elif is_inside_polygon(center, lanes["to-bottom-left-lane"]):
-                        counts["top-bottom"]["to-bottom"]["to-bottom-left-lane"][CLASS_MAP[cls]] += 1
-            elif top_to_bottom_traffic is False:
-                if is_inside_polygon(center, lanes["to-left"]):
-                    if is_inside_polygon(center, lanes["to-left-right-lane"]):
-                        counts["left-right"]["to-left"]["to-left-right-lane"][CLASS_MAP[cls]] += 1
-                    elif is_inside_polygon(center, lanes["to-left-left-lane"]):
-                        counts["left-right"]["to-left"]["to-left-left-lane"][CLASS_MAP[cls]] += 1
-                elif is_inside_polygon(center, lanes["to-right"]):
-                    if is_inside_polygon(center, lanes["to-right-right-lane"]):
-                        counts["left-right"]["to-right"]["to-right-right-lane"][CLASS_MAP[cls]] += 1
-                    elif is_inside_polygon(center, lanes["to-right-left-lane"]):
-                        counts["left-right"]["to-right"]["to-right-left-lane"][CLASS_MAP[cls]] += 1
+            # Проверяем нреобходимость выыода информации
+            if datetime.now() - last_time_updated >= timedelta(seconds=delta_seconds):
+                update = True
+                last_time_updated = datetime.now()
+
+            # Считаем количество объекта по полосам движения
+            if update: # Проверяем необходимость
+                if top_to_bottom_traffic is True: # Такое большое кол-во проверок для того, чтобы уменьшить кол-во вызовов is_inside_polygon()
+                    if is_inside_polygon(center, lanes["to-top"]):
+                        if is_inside_polygon(center, lanes["to-top-right-lane"]):
+                            counts["top-bottom"]["to-top"]["to-top-right-lane"][CLASS_MAP[cls]] += 1
+                        elif is_inside_polygon(center, lanes["to-top-left-lane"]):
+                            counts["top-bottom"]["to-top"]["to-top-left-lane"][CLASS_MAP[cls]] += 1
+                    elif is_inside_polygon(center, lanes["to-bottom"]):
+                        if is_inside_polygon(center, lanes["to-bottom-right-lane"]):
+                            counts["top-bottom"]["to-bottom"]["to-bottom-right-lane"][CLASS_MAP[cls]] += 1
+                        elif is_inside_polygon(center, lanes["to-bottom-left-lane"]):
+                            counts["top-bottom"]["to-bottom"]["to-bottom-left-lane"][CLASS_MAP[cls]] += 1
+                elif top_to_bottom_traffic is False:
+                    if is_inside_polygon(center, lanes["to-left"]):
+                        if is_inside_polygon(center, lanes["to-left-right-lane"]):
+                            counts["left-right"]["to-left"]["to-left-right-lane"][CLASS_MAP[cls]] += 1
+                        elif is_inside_polygon(center, lanes["to-left-left-lane"]):
+                            counts["left-right"]["to-left"]["to-left-left-lane"][CLASS_MAP[cls]] += 1
+                    elif is_inside_polygon(center, lanes["to-right"]):
+                        if is_inside_polygon(center, lanes["to-right-right-lane"]):
+                            counts["left-right"]["to-right"]["to-right-right-lane"][CLASS_MAP[cls]] += 1
+                        elif is_inside_polygon(center, lanes["to-right-left-lane"]):
+                            counts["left-right"]["to-right"]["to-right-left-lane"][CLASS_MAP[cls]] += 1
+                else:
+                    pass
 
         # Вывод информации
-        if top_to_bottom_traffic is True:
-            from prettytable import PrettyTable
-
-            data = {
-                "top-bottom": {
-                    "to-top": {
-                        "to-top-right-lane": {"bike": 0, "car/van": 0, "bus": 0, "cargo": 0},
-                        "to-top-left-lane": {"bike": 0, "car/van": 0, "bus": 0, "cargo": 0},
-                    },
-                    "to-bottom": {
-                        "to-bottom-right-lane": {"bike": 0, "car/van": 0, "bus": 0, "cargo": 0},
-                        "to-bottom-left-lane": {"bike": 0, "car/van": 0, "bus": 0, "cargo": 0},
-                    },
-                }
-            }
-
-            table = PrettyTable()
-            table.field_names = ["Direction", "Lane", "Bike", "Car/Van", "Bus", "Cargo"]
-
-            for direction, lanes in data.items():
-                for move, lane_dict in lanes.items():
-                    for lane, counts in lane_dict.items():
-                        table.add_row([f"{direction} -> {move}", lane, counts["bike"], counts["car/van"], counts["bus"],
-                                       counts["cargo"]])
-
-            print(table)
-
-        elif top_to_bottom_traffic is False:
-            pass
+        if update: # Проверка на необходимость
+            print("\n=== CURRENT STATE ===")
+            print(f"TIME: {datetime.now()}") # Когда работаем с прямой трансляцией
+            print(f"FRAME: {frame_count}")
+            if top_to_bottom_traffic is True:
+                print("TRAFFIC DIRECTION: top-bottom")
+                data = counts["top-bottom"]
+                table = PrettyTable()
+                table.field_names = ["Direction", "Lane", "Bike", "Car/Van", "Bus", "Cargo"]
+                for move, lane_dict in data.items():
+                    for lane_key, counts in lane_dict.items():
+                        table.add_row(
+                            [f"{move}", "-".join(lane_key.split("-")[2:]), str(counts["bike"]), str(counts["car/van"]), str(counts["bus"]),
+                            str(counts["cargo"])])
+                print(table)
+            elif top_to_bottom_traffic is False:
+                print("TRAFFIC DIRECTION: left-right")
+                data = counts["left-right"]
+                table = PrettyTable()
+                table.field_names = ["Direction", "Lane", "Bike", "Car/Van", "Bus", "Cargo"]
+                for move, lane_dict in data.items():
+                    for lane_key, counts in lane_dict.items():
+                        table.add_row(
+                            [f"{move}", "-".join(lane_key.split("-")[2:]), str(counts["bike"]), str(counts["car/van"]),
+                             str(counts["bus"]),
+                             str(counts["cargo"])])
+                print(table)
+            update = False # Обнуляем флаг
 
             # # Визуализация боксов
             # cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
@@ -115,14 +128,6 @@ def main():
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         frame_count += 1
-
-        if top_to_bottom_traffic is True:
-            print('Сверху-вниз')
-        elif top_to_bottom_traffic is False:
-            print('Слева-направо')
-        else:
-            print('None')
-
 
     # Завершение работы
     cap.release()
