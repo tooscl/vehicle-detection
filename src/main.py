@@ -97,6 +97,7 @@ def main():
         # Вывод информации
         if update: # Проверка на необходимость
             print("\n=== CURRENT STATE ===")
+            print(f"TIME DELTA: {DELTA_SECONDS} seconds")
             print(f"TIME: {datetime.now()}") # Когда работаем с прямой трансляцией
             print(f"FRAME: {frame_count}")
             if top_to_bottom_traffic is True:
